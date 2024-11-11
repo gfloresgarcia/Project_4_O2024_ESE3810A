@@ -25,7 +25,14 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define xJUST_MASTER
+#define USE_MASTER
+#define USE_SLAVE1
+//#define USE_SLAVE2
+//#define USE_SLAVE3
+
+/* Use to indicate the slave if the header received has to transmit or receive */
+#define SlaveTransmit 0
+#define SlaveReceive 1
 
 /* UART instance and clock */
 #define MASTER_UART UART3
@@ -52,9 +59,9 @@
 #define app_message_id_1_d (0x01<<2|message_size_2_bytes_d)
 #define app_message_id_2_d (0x02<<2|message_size_4_bytes_d)
 #define app_message_id_3_d (0x03<<2|message_size_8_bytes_d)
-#define app_message_id_4_d (0x04<<2|message_size_2_bytes_d)
-#define app_message_id_5_d (0x05<<2|message_size_4_bytes_d)
-#define app_message_id_6_d (0x06<<2|message_size_8_bytes_d)
+//#define app_message_id_4_d (0x04<<2|message_size_2_bytes_d)
+//#define app_message_id_5_d (0x05<<2|message_size_4_bytes_d)
+//#define app_message_id_6_d (0x06<<2|message_size_8_bytes_d)
 
 
 
@@ -90,7 +97,6 @@ int main(void)
     NVIC_SetPriority(MASTER_UART_RX_TX_IRQn, 5);
     NVIC_SetPriority(SLAVE_UART_RX_TX_IRQn, 5);
 
-
     if (xTaskCreate(test_task, "test_task", test_task_heap_size_d, NULL, init_task_PRIORITY, NULL) != pdPASS)
     {
         PRINTF("Init Task creation failed!.\r\n");
@@ -113,7 +119,8 @@ static void test_task(void *pvParameters)
 	lin1d3_handle_t* master_handle;
 	lin1d3_handle_t* slave_handle;
 	lin1d3_handle_t* local_slave_handle;
-	/* Set Master Config */
+
+#if defined(USE_MASTER)
 	node_config.type = lin1d3_master_nodeType;
 	node_config.bitrate = 9600;
 	node_config.uartBase = MASTER_UART;
@@ -122,8 +129,9 @@ static void test_task(void *pvParameters)
 	memset(node_config.messageTable,0, (sizeof(node_config.messageTable[0])*lin1d3_max_supported_messages_per_node_cfg_d));
 	/* Init Master node */
 	master_handle = lin1d3_InitNode(node_config);
-#if !defined(JUST_MASTER)
-	/* Set Slave Config */
+#endif
+
+#if defined(USE_SLAVE1)
 	node_config.type = lin1d3_slave_nodeType;
 	node_config.bitrate = 9600;
 	node_config.uartBase = SLAVE_UART;
@@ -131,47 +139,59 @@ static void test_task(void *pvParameters)
 	node_config.skip_uart_init = 0;
 	memset(node_config.messageTable,0, (sizeof(node_config.messageTable[0])*lin1d3_max_supported_messages_per_node_cfg_d));
 	node_config.messageTable[0].ID = app_message_id_1_d;
-	node_config.messageTable[0].rx = 0;
+	node_config.messageTable[0].rx = SlaveTransmit;
 	node_config.messageTable[0].handler = message_1_callback_slave;
 	node_config.messageTable[1].ID = app_message_id_2_d;
-	node_config.messageTable[1].rx = 0;
+	node_config.messageTable[1].rx = SlaveReceive;
 	node_config.messageTable[1].handler = message_2_callback_slave;
 	node_config.messageTable[2].ID = app_message_id_3_d;
-	node_config.messageTable[2].rx = 0;
+	node_config.messageTable[2].rx = SlaveReceive;
 	node_config.messageTable[2].handler = message_3_callback_slave;
 	/* Init Slave Node*/
 	slave_handle = lin1d3_InitNode(node_config);
+#endif
 
-	/* Set local Slave Config */
+#if defined(USE_SLAVE2)
 	node_config.type = lin1d3_slave_nodeType;
 	node_config.bitrate = 9600;
-	node_config.uartBase = LOCAL_SLAVE_UART;
-	node_config.srcclk = LOCAL_SLAVE_UART_CLK_FREQ;
+	node_config.uartBase = SLAVE_UART;
+	node_config.srcclk = SLAVE_UART_CLK_FREQ;
+	node_config.skip_uart_init = 0;
 	memset(node_config.messageTable,0, (sizeof(node_config.messageTable[0])*lin1d3_max_supported_messages_per_node_cfg_d));
-	node_config.messageTable[0].ID = app_message_id_4_d;
-	node_config.messageTable[0].rx = 0;
-	node_config.messageTable[0].handler = message_4_callback_local_slave;
-	node_config.messageTable[1].ID = app_message_id_5_d;
-	node_config.messageTable[1].rx = 0;
-	node_config.messageTable[1].handler = message_5_callback_local_slave;
-	node_config.messageTable[2].ID = app_message_id_6_d;
-	node_config.messageTable[2].rx = 0;
-	node_config.messageTable[2].handler = message_6_callback_local_slave;
-	node_config.messageTable[3].ID = app_message_id_1_d;
-	node_config.messageTable[3].rx = 1;
-	node_config.messageTable[3].handler = message_1_callback_local_slave;
-	node_config.skip_uart_init = 1;
-	node_config.uart_rtos_handle = master_handle->uart_rtos_handle;
-	/* Init local Slave Node*/
-	local_slave_handle = lin1d3_InitNode(node_config);
+	node_config.messageTable[0].ID = app_message_id_1_d;
+	node_config.messageTable[0].rx = SlaveReceive;
+	node_config.messageTable[0].handler = message_1_callback_slave;
+	node_config.messageTable[1].ID = app_message_id_2_d;
+	node_config.messageTable[1].rx = SlaveTransmit;
+	node_config.messageTable[1].handler = message_2_callback_slave;
+	node_config.messageTable[2].ID = app_message_id_3_d;
+	node_config.messageTable[2].rx = SlaveReceive;
+	node_config.messageTable[2].handler = message_3_callback_slave;
+	/* Init Slave Node*/
+	slave_handle = lin1d3_InitNode(node_config);
 #endif
 
-	if((NULL == master_handle)
-#if !defined(JUST_MASTER)
-		|| (NULL == slave_handle)
-		/*|| (NULL == local_slave_handle)*/
+#if defined(USE_SLAVE3)
+	node_config.type = lin1d3_slave_nodeType;
+	node_config.bitrate = 9600;
+	node_config.uartBase = SLAVE_UART;
+	node_config.srcclk = SLAVE_UART_CLK_FREQ;
+	node_config.skip_uart_init = 0;
+	memset(node_config.messageTable,0, (sizeof(node_config.messageTable[0])*lin1d3_max_supported_messages_per_node_cfg_d));
+	node_config.messageTable[0].ID = app_message_id_1_d;
+	node_config.messageTable[0].rx = SlaveReceive;
+	node_config.messageTable[0].handler = message_1_callback_slave;
+	node_config.messageTable[1].ID = app_message_id_2_d;
+	node_config.messageTable[1].rx = SlaveReceive;
+	node_config.messageTable[1].handler = message_2_callback_slave;
+	node_config.messageTable[2].ID = app_message_id_3_d;
+	node_config.messageTable[2].rx = SlaveTransmit;
+	node_config.messageTable[2].handler = message_3_callback_slave;
+	/* Init Slave Node*/
+	slave_handle = lin1d3_InitNode(node_config);
 #endif
-	   ){
+
+	if((NULL == slave_handle)){
 		PRINTF(" Init failed!! \r\n");
 		error = kStatus_Fail;
 	}
@@ -187,12 +207,6 @@ static void test_task(void *pvParameters)
     	lin1d3_masterSendMessage(master_handle, app_message_id_2_d);
     	vTaskDelay(200);
     	lin1d3_masterSendMessage(master_handle, app_message_id_3_d);
-    	vTaskDelay(200);
-    	lin1d3_masterSendMessage(master_handle, app_message_id_4_d);
-    	vTaskDelay(200);
-    	lin1d3_masterSendMessage(master_handle, app_message_id_5_d);
-    	vTaskDelay(200);
-    	lin1d3_masterSendMessage(master_handle, app_message_id_6_d);
     }
 
     vTaskSuspend(NULL);
@@ -268,4 +282,3 @@ static void	message_3_callback_slave(void* message)
 	message_data[6] = 85;
 	message_data[7] = 86;
 }
-

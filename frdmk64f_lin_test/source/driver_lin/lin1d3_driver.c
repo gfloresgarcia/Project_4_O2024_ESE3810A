@@ -63,6 +63,7 @@ lin1d3_handle_t* lin1d3_InitNode(lin1d3_nodeConfig_t config)
 	handle->uart_config.stopbits = kUART_OneStopBit;
 	handle->uart_config.buffer = pvPortMalloc(size_of_uart_buffer);
 	handle->uart_config.buffer_size = size_of_uart_buffer;
+
 	if(handle->uart_config.buffer == NULL){
 		return NULL;
 	}
@@ -166,9 +167,12 @@ static void master_task(void *pvParameters)
         		break;
         	}
         	message_size+=1;
-        	/* Send a Break It is just sending one byte 0, *** CHANGE THIS WITH A REAL SYNCH BREAK ****/
-        	UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)&synch_break_byte, 1);
-        	vTaskDelay(1);
+
+        	/* SynchBreak Configuration */
+        	handle->uart_rtos_handle->base->S2 |= (1 << UART_S2_BRK13_SHIFT);
+        	handle->uart_rtos_handle->base->C2 |= UART_C2_SBK_MASK;
+        	handle->uart_rtos_handle->base->C2 &= ~UART_C2_SBK_MASK;
+
         	/* Send the header */
         	UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)lin1p3_header, size_of_lin_header_d);
         	vTaskDelay(1);
