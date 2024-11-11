@@ -21,12 +21,7 @@ BOARD_InitPins:
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
  */
 
-/*FUNCTION**********************************************************************
- *
- * Function Name : BOARD_InitPins
- * Description   : Configures pin routing and optionally pin electrical features.
- *
- *END**************************************************************************/
+//"BoardInitPins: Configures pin routing and optionally pin electrical features
 void BOARD_InitPins(void) {
 
   CLOCK_EnableClock(kCLOCK_PortA);                           /* Port A Clock Gate Control: Clock enabled */
@@ -68,8 +63,8 @@ void BOARD_InitPins(void) {
   SIM->SOPT5 = ((SIM->SOPT5 & (~(SIM_SOPT5_UART0TXSRC_MASK))) | SIM_SOPT5_UART0TXSRC(SOPT5_UART0TXSRC_UART_TX));
 
 
-  //SW(Buttons);
-  const port_pin_config_t buttons_config =
+  //SW3(Button);
+  const port_pin_config_t SW3 =
   {
 		  	  	  	  	  	 kPORT_PullUp, 			     //Internal pull-up resistor is enabled
 							 kPORT_OpenDrainDisable,     //Open drain is disabled
@@ -80,8 +75,21 @@ void BOARD_InitPins(void) {
 							 kPORT_UnlockRegister        //Pin Control Register fields [15:0] are not locked
   };
 
-  PORT_SetPinConfig(PORTA, 4U, &buttons_config);			 /* PORTA4 (pin 38) is configured as PTA4 */
-  PORT_SetPinConfig(PORTC, 6U, &buttons_config);			 /* PORTC6 (pin 78) is configured as PTC6 */
+  PORT_SetPinConfig(PORTA, 4U, &SW3);			 /* PORTA4 (pin 38) is configured as PTA4 */
+
+  //SW2(Button);
+  const port_pin_config_t SW2 =
+  {
+		  	  	  	  	  	 kPORT_PullUp, 			     //Internal pull-up resistor is enabled
+							 kPORT_OpenDrainDisable,     //Open drain is disabled
+							 kPORT_FastSlewRate,		 //Fast slew rate is configured
+							 kPORT_MuxAsGpio,            //Pin is configured as PTC6
+							 kPORT_PassiveFilterDisable, //Passive filter is disabled
+							 kPORT_HighDriveStrength,    //High drive strength is configured
+							 kPORT_UnlockRegister        //Pin Control Register fields [15:0] are not locked
+  };
+
+  PORT_SetPinConfig(PORTC, 6U, &SW2);			 /* PORTC6 (pin 78) is configured as PTC6 */
 
 }
 
