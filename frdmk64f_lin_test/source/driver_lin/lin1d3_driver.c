@@ -64,6 +64,9 @@ lin1d3_handle_t* lin1d3_InitNode(lin1d3_nodeConfig_t config)
 	handle->uart_config.buffer = pvPortMalloc(size_of_uart_buffer);
 	handle->uart_config.buffer_size = size_of_uart_buffer;
 
+	UART3->BDH |= UART_BDH_LBKDIE_MASK;
+	UART3->S2 |= UART_S2_LBKDE_MASK;
+
 	if(handle->uart_config.buffer == NULL){
 		return NULL;
 	}
@@ -189,7 +192,8 @@ static void slave_task(void *pvParameters)
 	uint8_t  message_size = 0;
 	size_t n;
 	uint8_t  msg_idx;
-	uint8_t synch_break_byte = 0;
+	//uint8_t synch_break_byte = 0;
+	EventBits_t uxBits;
 
 	if(handle == NULL) {
 		vTaskSuspend(NULL);
@@ -199,10 +203,17 @@ static void slave_task(void *pvParameters)
     	/* Init the message header buffer */
     	memset(lin1p3_header, 0, size_of_lin_header_d);
     	/* Wait for a synch break This code is just waiting for one byte 0, *** CHANGE THIS WITH A REAL SYNCH BREAK ****/
-    	synch_break_byte = 0xFF;
-    	do {
-    		UART_RTOS_Receive(handle->uart_rtos_handle, &synch_break_byte, 1, &n);
-    	}while(synch_break_byte != 0);
+    	//synch_break_byte = 0xFF;
+    	//do {
+    		//UART_RTOS_Receive(handle->uart_rtos_handle, &synch_break_byte, 1, &n);
+    	//}while(synch_break_byte != 0);
+
+
+    	// Espera a que el bit esté establecido
+    	uxBits = xEventGroupWaitBits(handle->rxEvent, RTOS_UART_HARDWARE_BUFFER_OVERRUN, pdTRUE, pdFALSE, portMAX_DELAY);
+
+
+
 
     	/* Wait for header on the UART */
     	UART_RTOS_Receive(handle->uart_rtos_handle, lin1p3_header, size_of_lin_header_d, &n);
