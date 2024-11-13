@@ -60,17 +60,16 @@ enum _uart_status
     kStatus_UART_RxIdle = MAKE_STATUS(kStatusGroup_UART, 3),              /*!< UART receiver is idle. */
     kStatus_UART_TxWatermarkTooLarge = MAKE_STATUS(kStatusGroup_UART, 4), /*!< TX FIFO watermark too large  */
     kStatus_UART_RxWatermarkTooLarge = MAKE_STATUS(kStatusGroup_UART, 5), /*!< RX FIFO watermark too large  */
-    kStatus_UART_FlagCannotClearManually =
-        MAKE_STATUS(kStatusGroup_UART, 6),                                /*!< UART flag can't be manually cleared. */
+    kStatus_UART_FlagCannotClearManually = MAKE_STATUS(kStatusGroup_UART, 6),                                /*!< UART flag can't be manually cleared. */
     kStatus_UART_Error = MAKE_STATUS(kStatusGroup_UART, 7),               /*!< Error happens on UART. */
     kStatus_UART_RxRingBufferOverrun = MAKE_STATUS(kStatusGroup_UART, 8), /*!< UART RX software ring buffer overrun. */
     kStatus_UART_RxHardwareOverrun = MAKE_STATUS(kStatusGroup_UART, 9),   /*!< UART RX receiver overrun. */
     kStatus_UART_NoiseError = MAKE_STATUS(kStatusGroup_UART, 10),         /*!< UART noise error. */
     kStatus_UART_FramingError = MAKE_STATUS(kStatusGroup_UART, 11),       /*!< UART framing error. */
     kStatus_UART_ParityError = MAKE_STATUS(kStatusGroup_UART, 12),        /*!< UART parity error. */
-    kStatus_UART_BaudrateNotSupport =
-        MAKE_STATUS(kStatusGroup_UART, 13), /*!< Baudrate is not support in current clock source */
+    kStatus_UART_BaudrateNotSupport = MAKE_STATUS(kStatusGroup_UART, 13), /*!< Baudrate is not support in current clock source */
     kStatus_UART_IdleLineDetected = MAKE_STATUS(kStatusGroup_UART, 14), /*!< UART IDLE line detected. */
+	kStatus_UART_LinBreakDetected = MAKE_STATUS(kStatusGroup_UART, 15), /*!< UART IDLE line detected. */
 };
 
 /*! @brief UART parity mode. */

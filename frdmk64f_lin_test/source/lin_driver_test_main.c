@@ -53,8 +53,8 @@
 #define SLAVE_UART_RX_TX_IRQn UART4_RX_TX_IRQn
 
 /* Task priorities. */
-#define init_task_PRIORITY (configMAX_PRIORITIES - 2)
-#define test_task_heap_size_d	(192)
+#define init_task_PRIORITY (configMAX_PRIORITIES - 3)
+#define test_task_heap_size_d	(1024)
 
 #define app_message_id_1_d (0x01<<2|message_size_2_bytes_d)
 #define app_message_id_2_d (0x02<<2|message_size_4_bytes_d)
@@ -134,8 +134,8 @@ static void test_task(void *pvParameters)
 #if defined(USE_SLAVE1)
 	node_config.type = lin1d3_slave_nodeType;
 	node_config.bitrate = 9600;
-	node_config.uartBase = SLAVE_UART;
-	node_config.srcclk = SLAVE_UART_CLK_FREQ;
+	node_config.uartBase = LOCAL_SLAVE_UART;
+	node_config.srcclk = LOCAL_SLAVE_UART_CLK_FREQ;
 	node_config.skip_uart_init = 0;
 	memset(node_config.messageTable,0, (sizeof(node_config.messageTable[0])*lin1d3_max_supported_messages_per_node_cfg_d));
 	node_config.messageTable[0].ID = app_message_id_1_d;
@@ -201,11 +201,11 @@ static void test_task(void *pvParameters)
 
 	while (kStatus_Success == error)
     {
-    	vTaskDelay(200);
+    	vTaskDelay(2000);
     	lin1d3_masterSendMessage(master_handle, app_message_id_1_d);
-    	vTaskDelay(200);
+    	vTaskDelay(2000);
     	lin1d3_masterSendMessage(master_handle, app_message_id_2_d);
-    	vTaskDelay(200);
+    	vTaskDelay(2000);
     	lin1d3_masterSendMessage(master_handle, app_message_id_3_d);
     }
 

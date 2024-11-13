@@ -9,7 +9,7 @@
 #include <fsl_debug_console.h>
 
 #define master_stack_size_d	(256)
-#define master_task_priority (configMAX_PRIORITIES - 1)
+#define master_task_priority (configMAX_PRIORITIES - 2)
 #define master_queue_size_d	(8)
 
 #define slave_stack_size_d	(256)
@@ -23,6 +23,7 @@
 static void master_task(void *pvParameters);
 static void slave_task(void *pvParameters);
 
+EventGroupHandle_t SynchBreak;
 
 
 /******************************************************************************
@@ -172,9 +173,9 @@ static void master_task(void *pvParameters)
         	message_size+=1;
 
         	/* SynchBreak Configuration */
-        	handle->uart_rtos_handle->base->S2 |= (1 << UART_S2_BRK13_SHIFT);
-        	handle->uart_rtos_handle->base->C2 |= UART_C2_SBK_MASK;
-        	handle->uart_rtos_handle->base->C2 &= ~UART_C2_SBK_MASK;
+        	UART3->S2 |= (1 << UART_S2_BRK13_SHIFT);
+        	UART3->C2 |= UART_C2_SBK_MASK;
+        	UART3->C2 &= ~UART_C2_SBK_MASK;
 
         	/* Send the header */
         	UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)lin1p3_header, size_of_lin_header_d);
@@ -192,8 +193,14 @@ static void slave_task(void *pvParameters)
 	uint8_t  message_size = 0;
 	size_t n;
 	uint8_t  msg_idx;
-	//uint8_t synch_break_byte = 0;
+
+	SynchBreak = xEventGroupCreate();
 	EventBits_t uxBits;
+
+
+
+	//uint8_t synch_break_byte = 0;
+
 
 	if(handle == NULL) {
 		vTaskSuspend(NULL);
@@ -210,8 +217,7 @@ static void slave_task(void *pvParameters)
 
 
     	// Espera a que el bit esté establecido
-    	uxBits = xEventGroupWaitBits(handle->rxEvent, RTOS_UART_HARDWARE_BUFFER_OVERRUN, pdTRUE, pdFALSE, portMAX_DELAY);
-
+    	uxBits = xEventGroupWaitBits(SynchBreak, 1, pdTRUE, pdFALSE, portMAX_DELAY);
 
 
 
