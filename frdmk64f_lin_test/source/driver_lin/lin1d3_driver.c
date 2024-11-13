@@ -191,6 +191,8 @@ static void slave_task(void *pvParameters)
 	size_t n;
 	uint8_t  msg_idx;
 
+	EventBits_t ev;
+
 	if(handle == NULL) {
 		vTaskSuspend(NULL);
 	}
@@ -203,6 +205,7 @@ static void slave_task(void *pvParameters)
     	//do {
     		//UART_RTOS_Receive(handle->uart_rtos_handle, &synch_break_byte, 1, &n);
     	//}while(synch_break_byte != 0);
+        ev = xEventGroupWaitBits(handle->uart_rtos_handle->rxEvent, RTOS_UART_LIN_BREAK, pdTRUE, pdFALSE, portMAX_DELAY);
 
     	/* Wait for header on the UART */
     	UART_RTOS_Receive(handle->uart_rtos_handle, lin1p3_header, size_of_lin_header_d, &n);
