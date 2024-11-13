@@ -9,7 +9,7 @@
 #include <fsl_debug_console.h>
 
 #define master_stack_size_d	(256)
-#define master_task_priority (configMAX_PRIORITIES - 2)
+#define master_task_priority (configMAX_PRIORITIES - 1)
 #define master_queue_size_d	(8)
 
 #define slave_stack_size_d	(256)
@@ -22,9 +22,6 @@
 /*Static function prototypes */
 static void master_task(void *pvParameters);
 static void slave_task(void *pvParameters);
-
-EventGroupHandle_t SynchBreak;
-
 
 /******************************************************************************
  * Public functions
@@ -194,14 +191,6 @@ static void slave_task(void *pvParameters)
 	size_t n;
 	uint8_t  msg_idx;
 
-	SynchBreak = xEventGroupCreate();
-	EventBits_t uxBits;
-
-
-
-	//uint8_t synch_break_byte = 0;
-
-
 	if(handle == NULL) {
 		vTaskSuspend(NULL);
 	}
@@ -214,12 +203,6 @@ static void slave_task(void *pvParameters)
     	//do {
     		//UART_RTOS_Receive(handle->uart_rtos_handle, &synch_break_byte, 1, &n);
     	//}while(synch_break_byte != 0);
-
-
-    	// Espera a que el bit esté establecido
-    	uxBits = xEventGroupWaitBits(SynchBreak, 1, pdTRUE, pdFALSE, portMAX_DELAY);
-
-
 
     	/* Wait for header on the UART */
     	UART_RTOS_Receive(handle->uart_rtos_handle, lin1p3_header, size_of_lin_header_d, &n);

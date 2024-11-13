@@ -80,6 +80,8 @@ typedef struct _uart_rtos_config
 #define RTOS_UART_RING_BUFFER_OVERRUN 0x2
 /*! @brief Event flag - hardware buffer overrun. */
 #define RTOS_UART_HARDWARE_BUFFER_OVERRUN 0x4
+/*! @brief Event flag - hardware buffer overrun. */
+#define RTOS_UART_LIN_BREAK 0x4
 /*@}*/
 
 /*! @brief UART FreeRTOS transfer structure. */

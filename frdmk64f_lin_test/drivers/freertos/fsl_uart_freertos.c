@@ -42,19 +42,13 @@
 #define FSL_COMPONENT_ID "platform.drivers.uart_freertos"
 #endif
 
-extern EventGroupHandle_t SynchBreak;
-int count = 0;
-
-
 static void UART_RTOS_Callback(UART_Type *base, uart_handle_t *state, status_t status, void *param)
 {
     uart_rtos_handle_t *handle = (uart_rtos_handle_t *)param;
-    BaseType_t xHigherPriorityTaskWoken, xResult, isThereSynchBreak;
+    BaseType_t xHigherPriorityTaskWoken, xResult;
 
     xHigherPriorityTaskWoken = pdFALSE;
     xResult = pdFAIL;
-
-    isThereSynchBreak = pdFAIL;
 
     if (status == kStatus_UART_RxIdle)
     {
@@ -76,8 +70,8 @@ static void UART_RTOS_Callback(UART_Type *base, uart_handle_t *state, status_t s
     }
     else if (status == kStatus_UART_LinBreakDetected)
 	{
-    	isThereSynchBreak = xEventGroupSetBitsFromISR(SynchBreak, 1, &xHigherPriorityTaskWoken);
-		count++;
+    	UART_ClearStatusFlags(base, kUART_LinBreakFlag | kUART_RxActiveEdgeFlag | kUART_RxActiveFlag);
+    	xResult = xEventGroupSetBitsFromISR(handle->rxEvent, RTOS_UART_LIN_BREAK, &xHigherPriorityTaskWoken);
 	}
 
     if (xResult != pdFAIL)

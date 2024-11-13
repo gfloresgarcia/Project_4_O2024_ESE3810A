@@ -51,8 +51,7 @@ enum _uart_tansfer_states
     kUART_RxIdle,         /* RX idle. */
     kUART_RxBusy,         /* RX busy. */
     kUART_RxFramingError, /* Rx framing error */
-    kUART_RxParityError,   /* Rx parity error */
-	kUART_LinBreak		   /* LIN Break */
+    kUART_RxParityError   /* Rx parity error */
 };
 
 /* Typedef for interrupt handler. */
@@ -944,21 +943,12 @@ void UART_TransferHandleIRQ(UART_Type *base, uart_handle_t *handle)
 #if defined(FSL_FEATURE_UART_HAS_LIN_BREAK_DETECT) && FSL_FEATURE_UART_HAS_LIN_BREAK_DETECT
     if (UART_S2_LBKDIF_MASK & base->S2)
     {
-    	base->S2 |= UART_S2_LBKDIF_MASK;
-    	//(void)base->D;
-
-        handle->rxState = kUART_LinBreak;
-        handle->rxDataSize = 0U;
-        /* Trigger callback. */
         if (handle->callback)
         {
             handle->callback(base, handle, kStatus_UART_LinBreakDetected, handle->userData);
         }
     }
 #endif
-
-
-
     /* If RX framing error */
     if (UART_S1_FE_MASK & base->S1)
     {
