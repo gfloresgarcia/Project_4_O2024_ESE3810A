@@ -206,8 +206,21 @@ static void	message_1_callback_slave(void* message)
 {
 	uint8_t* message_data = (uint8_t*)message;
 	PRINTF("Slave got message 1 request\r\n");
-	message_data[0] = 79;
-	message_data[1] = 80;
+
+#if defined(USE_SLAVE1)
+	//Un if que valide si el boton esta presionado se envia un 1 y enciendes rojo, si no se envia 0 y apagas
+	message_data[0] = 1;
+	message_data[1] = 0;
+#endif
+
+#if defined(USE_SLAVE2)
+	//if byte 0 es igual a 1 el slave2 enciende en rojo
+#endif
+
+#if defined(USE_SLAVE2)
+
+
+#endif
 }
 
 static void	message_2_callback_slave(void* message)
