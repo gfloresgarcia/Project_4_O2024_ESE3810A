@@ -62,8 +62,7 @@ lin1d3_handle_t* lin1d3_InitNode(lin1d3_nodeConfig_t config)
 	handle->uart_config.buffer = pvPortMalloc(size_of_uart_buffer);
 	handle->uart_config.buffer_size = size_of_uart_buffer;
 
-	UART3->BDH |= UART_BDH_LBKDIE_MASK;
-	UART3->S2 |= UART_S2_LBKDE_MASK;
+	handle->uart_config.base->BDH |= UART_BDH_LBKDIE_MASK;
 
 	if(handle->uart_config.buffer == NULL){
 		return NULL;
@@ -138,7 +137,6 @@ static void master_task(void *pvParameters)
 {
 	lin1d3_handle_t* handle = (lin1d3_handle_t*)pvParameters;
 	uint8_t  ID;
-	uint8_t  synch_break_byte = 0;
 	uint8_t  lin1p3_header[] = {0x55, 0x00};
 	uint8_t  lin1p3_message[size_of_uart_buffer];
 	uint8_t  message_size = 0;
@@ -170,9 +168,9 @@ static void master_task(void *pvParameters)
         	message_size+=1;
 
         	/* SynchBreak Configuration */
-        	UART3->S2 |= (1 << UART_S2_BRK13_SHIFT);
-        	UART3->C2 |= UART_C2_SBK_MASK;
-        	UART3->C2 &= ~UART_C2_SBK_MASK;
+        	handle->uart_config.base->S2 |= (1 << UART_S2_BRK13_SHIFT);
+        	handle->uart_config.base->C2 |= UART_C2_SBK_MASK;
+        	handle->uart_config.base->C2 &= ~UART_C2_SBK_MASK;
 
         	/* Send the header */
         	UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)lin1p3_header, size_of_lin_header_d);
@@ -201,11 +199,13 @@ static void slave_task(void *pvParameters)
     	/* Init the message header buffer */
     	memset(lin1p3_header, 0, size_of_lin_header_d);
     	/* Wait for a synch break This code is just waiting for one byte 0, *** CHANGE THIS WITH A REAL SYNCH BREAK ****/
-    	//synch_break_byte = 0xFF;
-    	//do {
-    		//UART_RTOS_Receive(handle->uart_rtos_handle, &synch_break_byte, 1, &n);
-    	//}while(synch_break_byte != 0);
+    	handle->uart_config.base->S2 |= UART_S2_LBKDIF_MASK;
+    	handle->uart_config.base->S2 |= UART_S2_LBKDE_MASK;
+
         ev = xEventGroupWaitBits(handle->uart_rtos_handle->rxEvent, RTOS_UART_LIN_BREAK, pdTRUE, pdFALSE, portMAX_DELAY);
+
+        handle->uart_config.base->S2 |= UART_S2_LBKDIF_MASK;
+        handle->uart_config.base->S2 &= ~UART_S2_LBKDE_MASK;
 
     	/* Wait for header on the UART */
     	UART_RTOS_Receive(handle->uart_rtos_handle, lin1p3_header, size_of_lin_header_d, &n);

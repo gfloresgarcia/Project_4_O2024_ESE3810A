@@ -943,6 +943,9 @@ void UART_TransferHandleIRQ(UART_Type *base, uart_handle_t *handle)
 #if defined(FSL_FEATURE_UART_HAS_LIN_BREAK_DETECT) && FSL_FEATURE_UART_HAS_LIN_BREAK_DETECT
     if (UART_S2_LBKDIF_MASK & base->S2)
     {
+    	base->S2 |= UART_S2_LBKDIF_MASK | UART_S2_RXEDGIF_MASK;
+    	(void)base->D;
+
         if (handle->callback)
         {
             handle->callback(base, handle, kStatus_UART_LinBreakDetected, handle->userData);

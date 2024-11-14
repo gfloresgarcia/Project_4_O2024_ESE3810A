@@ -70,7 +70,7 @@ static void UART_RTOS_Callback(UART_Type *base, uart_handle_t *state, status_t s
     }
     else if (status == kStatus_UART_LinBreakDetected)
 	{
-    	UART_ClearStatusFlags(base, kUART_LinBreakFlag | kUART_RxActiveEdgeFlag | kUART_RxActiveFlag);
+    	//UART_ClearStatusFlags(base, kUART_LinBreakFlag);
     	xResult = xEventGroupSetBitsFromISR(handle->rxEvent, RTOS_UART_LIN_BREAK, &xHigherPriorityTaskWoken);
 	}
 
