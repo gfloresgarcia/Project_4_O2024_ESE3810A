@@ -7,6 +7,7 @@
 #include "lin1d3_driver.h"
 #include <string.h>
 #include <fsl_debug_console.h>
+#include "validation.h"
 
 #define master_stack_size_d	(256)
 #define master_task_priority (configMAX_PRIORITIES - 1)
@@ -27,6 +28,49 @@ static void slave_task(void *pvParameters);
  * Public functions
  *
  *****************************************************************************/
+
+// Return true if the bit is set. Otherwise return false
+bool getBit(int num, int i)
+{
+    return ((num & (1 << i)) != 0);
+}
+
+#if defined(CALC_PARITY)
+// Calculate parity bits
+uint32_t lin1p3_calculateParity(uint8_t header)
+{
+	uint8_t lin1d4_p0 = 0x00;
+	uint8_t lin1d4_p1 = 0x00;
+
+	/* P0 = ID0 ^ ID1 ^ ID2 ^ ID4*/
+	/* Even parity */
+	lin1d4_p0 = ((header >> 7) & 1) ^ ((header >> 6) & 1) ^ ((header >> 5) & 1) ^ ((header >> 3) & 1);
+	/* P1 = !(ID1 ^ ID3 ^ ID4 ^ ID5)*/
+	/* Odd parity */
+	lin1d4_p1 = !( ((header >> 6) & 1) ^ ((header >> 4) & 1) ^ ((header >> 3) & 1) ^ ((header >> 2) & 1) );
+
+	/* Return parity into the header */
+	return ((lin1d4_p0<<1) | lin1d4_p1);
+}
+#endif
+
+#ifdef CALC_CHECKSUM
+// Calculates checksum based on Lin 1.3 Classic
+uint8_t lin1d3_checksum(uint8_t message[] , uint8_t len){
+	uint16_t checksum = 0;
+
+    for (size_t i = 0; i < len; i++) {
+        checksum += message[i];
+        checksum = (checksum & 0xFF) + (checksum >> 8); // Add carry if 8 bits overflow
+    }
+
+    return checksum;
+
+	return (uint8_t)((~checksum) & 0xFF);
+}
+#endif
+
+
 
 /*
  * Init a LIN node
@@ -140,6 +184,7 @@ static void master_task(void *pvParameters)
 	uint8_t  lin1p3_header[] = {0x55, 0x00};
 	uint8_t  lin1p3_message[size_of_uart_buffer];
 	uint8_t  message_size = 0;
+	uint8_t  lin1p3_parity = 0;
 
 	if(handle == NULL) {
 		vTaskSuspend(NULL);
@@ -151,6 +196,16 @@ static void master_task(void *pvParameters)
         	/* Build and send the LIN Header */
         	/* Put the ID into the header */
         	lin1p3_header[1] = ID<<2;
+
+#if defined(CALC_PARITY)
+        	/* Calculate parity bits */
+        	lin1p3_parity = lin1d3_calculateParity(lin1p3_header[1]);
+
+			/* Put the parity bits into the header */
+			lin1p3_header[1] |= lin1p3_parity;
+#endif
+
+
         	/* TODO: put the parity bits */
         	/* Init the message recevie buffer */
         	memset(lin1p3_message, 0, size_of_uart_buffer);
@@ -168,7 +223,11 @@ static void master_task(void *pvParameters)
         	message_size+=1;
 
         	/* SynchBreak Configuration */
+        	/* Configure 13bit break transmission */
         	handle->uart_config.base->S2 |= (1 << UART_S2_BRK13_SHIFT);
+
+
+        	/* Send the break signal */
         	handle->uart_config.base->C2 |= UART_C2_SBK_MASK;
         	handle->uart_config.base->C2 &= ~UART_C2_SBK_MASK;
 
@@ -190,6 +249,16 @@ static void slave_task(void *pvParameters)
 	uint8_t  msg_idx;
 
 	EventBits_t ev;
+
+#if defined(CALC_PARITY)
+	uint8_t  lin1p3_parity = 0;
+#endif
+#if defined(CALC_CHECKSUM)
+	uint8_t  lin1p3_cksm;
+#endif
+
+
+
 
 	if(handle == NULL) {
 		vTaskSuspend(NULL);
@@ -216,6 +285,22 @@ static void slave_task(void *pvParameters)
     		/* Header is not correct we are ignoring the header */
     		continue;
     	}
+
+
+#if defined(CALC_PARITY)
+    	PRINTF("Header: %x \r\n" , lin1p3_header[1]);
+    	/* Calculate parity bits */
+    	lin1p3_parity = lin1p3_calculateParity(lin1p3_header[1]);
+
+    	/* Check calculated parity bits are the same than the ones in header*/
+    	if ((lin1p3_header[1] & lin1p3_parity) != lin1p3_parity)
+    	{
+    		PRINTF("Bad Parity \r\n");
+    		/* ID parity bits are not correct we are ignoring message*/
+    		continue;
+    	}
+#endif
+
     	/* Get the message ID */
     	ID = (lin1p3_header[1] & 0xFC)>>2;
     	/* If the header is correct, check if the message is in the table */
@@ -250,13 +335,33 @@ static void slave_task(void *pvParameters)
         	/*If the message is in the table call the message callback */
     		/* User shall fill the message */
         	handle->config.messageTable[msg_idx].handler((void*)lin1p3_message);
+
+
+#if defined(CALC_CHECKSUM)
+				chsum = checksum(lin1d3_message , message_size);
+				//PRINTF("chsum %x\n\r", chsum);
+#endif
+
+
         	/* TODO: Add the checksum to the message */
         	/* Send the message data */
+				/* Send the message data */
+				lin1p3_message[0]++;
+				PRINTF("Sending message %d \n", lin1p3_message[0]);
         	UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)lin1p3_message, message_size);
     	}
     	else {
         	/* Wait for Response on the UART */
         	UART_RTOS_Receive(handle->uart_rtos_handle, lin1p3_message, message_size, &n);
+
+#if defined(CALC_CHECKSUM)
+				chsum = checksum(lin1p3_message , n - 1);
+				if(chsum != lin1d3_message[n-1])
+				{
+					continue;
+				}
+#endif
+
         	/* TODO: Check the checksum on the message */
         	/*If the message is in the table call the message callback */
         	handle->config.messageTable[msg_idx].handler((void*)lin1p3_message);

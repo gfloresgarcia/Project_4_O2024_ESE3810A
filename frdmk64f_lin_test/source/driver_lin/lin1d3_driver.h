@@ -20,6 +20,7 @@
 #include "fsl_uart.h"
 
 #include "lin1d3_driver_Cfg.h"
+
 /*
  * Enumeration for the type of supported nodes
  * */

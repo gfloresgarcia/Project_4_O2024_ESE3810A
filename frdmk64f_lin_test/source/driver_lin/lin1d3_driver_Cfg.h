@@ -3,6 +3,8 @@
 
 #define lin1d3_max_supported_messages_per_node_cfg_d (16)
 
+#define CALC_PARITY
+//#define CALC_CHECKSUM
 
 //Definitions_to bits/pins in register
 typedef enum
