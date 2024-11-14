@@ -318,7 +318,9 @@ static void slave_task(void *pvParameters)
         	/* TODO: Add the checksum to the message */
         	lin1p3_message[message_size - 1] = checksum;
         	/* Send the message data */
+        	handle->uart_config.base->C2 &= ~UART_C2_RE_MASK;
         	UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)lin1p3_message, message_size);
+        	handle->uart_config.base->C2 |= UART_C2_RE_MASK;
     	}
     	else {
         	/* Wait for Response on the UART */

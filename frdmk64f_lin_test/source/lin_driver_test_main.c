@@ -59,21 +59,11 @@
 #define app_message_id_1_d (0x01<<2|message_size_2_bytes_d)
 #define app_message_id_2_d (0x02<<2|message_size_4_bytes_d)
 #define app_message_id_3_d (0x03<<2|message_size_8_bytes_d)
-//#define app_message_id_4_d (0x04<<2|message_size_2_bytes_d)
-//#define app_message_id_5_d (0x05<<2|message_size_4_bytes_d)
-//#define app_message_id_6_d (0x06<<2|message_size_8_bytes_d)
-
-
 
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
 static void test_task(void *pvParameters);
-
-static void	message_4_callback_local_slave(void* message);
-static void	message_5_callback_local_slave(void* message);
-static void	message_6_callback_local_slave(void* message);
-static void	message_1_callback_local_slave(void* message);
 
 static void	message_1_callback_slave(void* message);
 static void	message_2_callback_slave(void* message);
@@ -122,7 +112,7 @@ static void test_task(void *pvParameters)
 
 #if defined(USE_MASTER)
 	node_config.type = lin1d3_master_nodeType;
-	node_config.bitrate = 9600;
+	node_config.bitrate = 19200;
 	node_config.uartBase = MASTER_UART;
 	node_config.srcclk = MASTER_UART_CLK_FREQ;
 	node_config.skip_uart_init = 0;
@@ -133,7 +123,7 @@ static void test_task(void *pvParameters)
 
 #if defined(USE_SLAVE1)
 	node_config.type = lin1d3_slave_nodeType;
-	node_config.bitrate = 9600;
+	node_config.bitrate = 19200;
 	node_config.uartBase = SLAVE_UART;
 	node_config.srcclk = SLAVE_UART_CLK_FREQ;
 	node_config.skip_uart_init = 0;
@@ -201,54 +191,15 @@ static void test_task(void *pvParameters)
 
 	while (kStatus_Success == error)
     {
-    	vTaskDelay(2000);
+    	vTaskDelay(500);
     	lin1d3_masterSendMessage(master_handle, app_message_id_1_d);
-    	vTaskDelay(2000);
-    	lin1d3_masterSendMessage(master_handle, app_message_id_2_d);
-    	vTaskDelay(2000);
-    	lin1d3_masterSendMessage(master_handle, app_message_id_3_d);
+    	//vTaskDelay(2000);
+    	//lin1d3_masterSendMessage(master_handle, app_message_id_2_d);
+    	//vTaskDelay(2000);
+    	//lin1d3_masterSendMessage(master_handle, app_message_id_3_d);
     }
 
     vTaskSuspend(NULL);
-}
-
-
-static void	message_4_callback_local_slave(void* message)
-{
-	uint8_t* message_data = (uint8_t*)message;
-	PRINTF("Local Slave got message 4 request\r\n");
-	message_data[0] = 1;
-	message_data[1] = 2;
-}
-
-static void	message_5_callback_local_slave(void* message)
-{
-	uint8_t* message_data = (uint8_t*)message;
-	PRINTF("Local Slave got message 5 request\r\n");
-	message_data[0] = 1;
-	message_data[1] = 2;
-	message_data[2] = 3;
-	message_data[3] = 4;
-}
-
-static void	message_6_callback_local_slave(void* message)
-{
-	uint8_t* message_data = (uint8_t*)message;
-	PRINTF("Local Slave got message 6 request\r\n");
-	message_data[0] = 1;
-	message_data[1] = 2;
-	message_data[2] = 3;
-	message_data[3] = 4;
-	message_data[4] = 5;
-	message_data[5] = 6;
-	message_data[6] = 7;
-	message_data[7] = 8;
-}
-
-static void	message_1_callback_local_slave(void* message)
-{
-	uint8_t* message_data = (uint8_t*)message;
-	PRINTF("Local Slave got response to message 1 %d,%d\r\n", message_data[0], message_data[1]);
 }
 
 static void	message_1_callback_slave(void* message)
