@@ -17,6 +17,7 @@
 
 #include "fsl_uart_freertos.h"
 #include "fsl_uart.h"
+#include "fsl_port.h"
 
 #include "pin_mux.h"
 #include "clock_config.h"
@@ -71,10 +72,128 @@ static void	message_3_callback_slave(void* message);
 /*******************************************************************************
  * Variables
  ******************************************************************************/
+volatile bool button1_pressed = 0;
+volatile bool button2_pressed = 0;
 
 /*******************************************************************************
  * Code
  ******************************************************************************/
+/*!
+ * @brief Interrupt service function of switch SW3.
+ *
+ */
+void BOARD_SW2_IRQ_HANDLER(void)
+{
+	if (button1_pressed == 0) {
+		button1_pressed = 1;
+	}
+	else {
+		button1_pressed = 0;
+	}
+
+    /* Clear external interrupt flag. */
+    GPIO_PortClearInterruptFlags(BOARD_SW2_GPIO, 1U << BOARD_SW2_GPIO_PIN);
+}
+
+/*!
+ * @brief Interrupt service function of switch SW3.
+ *
+ */
+void BOARD_SW3_IRQ_HANDLER(void)
+{
+	button2_pressed = 1;
+    /* Clear external interrupt flag. */
+    GPIO_PortClearInterruptFlags(BOARD_SW3_GPIO, 1U << BOARD_SW3_GPIO_PIN);
+}
+
+void BOARD_InitGPIOInterrupts (void)
+{
+    /* Define the init structure for the input switch pin */
+    gpio_pin_config_t sw3_config = {
+        kGPIO_DigitalInput,
+        0,
+    };
+    gpio_pin_config_t sw2_config = {
+    	kGPIO_DigitalInput,
+		0,
+    };
+
+    PORT_SetPinInterruptConfig(BOARD_SW3_PORT, BOARD_SW3_GPIO_PIN, kPORT_InterruptFallingEdge);
+	PORT_SetPinInterruptConfig(BOARD_SW2_PORT, BOARD_SW2_GPIO_PIN, kPORT_InterruptFallingEdge);
+
+	EnableIRQ(BOARD_SW3_IRQ);
+	EnableIRQ(BOARD_SW2_IRQ);
+
+	GPIO_PinInit(BOARD_SW3_GPIO, BOARD_SW3_GPIO_PIN, &sw3_config);
+	GPIO_PinInit(BOARD_SW2_GPIO, BOARD_SW2_GPIO_PIN, &sw2_config);
+
+
+    //Set PORTA Interrupt level to 3 (higher than SYSCALL), configMAX_SYSCALL_INTERRUPT_PRIORITY priority is 2.
+    (void) NVIC_GetPriority(PORTA_IRQn);
+	NVIC_SetPriority(PORTA_IRQn,3);        //PORTA vector is 5
+	(void) NVIC_GetPriority(PORTC_IRQn);
+	NVIC_SetPriority(PORTC_IRQn,4);
+
+	/* Define the init structure for the output LED pin*/
+	gpio_pin_config_t led_config = {
+		kGPIO_DigitalOutput,
+		0,
+	};
+	/* PORTB2 is configured as PTB2 */
+	PORT_SetPinMux(PORTB, 2U, kPORT_MuxAsGpio);
+	/* PORTB3 is configured as PTB3 */
+	PORT_SetPinMux(PORTB, 3U, kPORT_MuxAsGpio);
+	/* PORTB10 is configured as PTB10 */
+	PORT_SetPinMux(PORTB, 10U, kPORT_MuxAsGpio);
+	/* PORTB11 is configured as PTB11 */
+	PORT_SetPinMux(PORTB, 11U, kPORT_MuxAsGpio);
+
+	GPIO_PinInit(GPIOB, 2,  &led_config);
+	GPIO_PinInit(GPIOB, 3,  &led_config);
+	GPIO_PinInit(GPIOB, 10, &led_config);
+	GPIO_PinInit(GPIOB, 11, &led_config);
+}
+
+/***********************************************************
+ *  LEDs
+ * ********************************************************/
+void BOARD_InitLEDsPins(void)
+{
+    /* Port B Clock Gate Control: Clock enabled */
+    CLOCK_EnableClock(kCLOCK_PortB);
+    /* Port E Clock Gate Control: Clock enabled */
+    CLOCK_EnableClock(kCLOCK_PortE);
+
+    /* Define the init structure for the output LED pin*/
+    gpio_pin_config_t led_config = {
+        kGPIO_DigitalOutput,
+        0,
+    };
+
+    /* Port B Clock Gate Control: Clock enabled */
+    CLOCK_EnableClock(kCLOCK_PortB);
+
+    /* RED*/
+    PORT_SetPinMux(PORTB, 22U, kPORT_MuxAsGpio);
+    /* GREEN */
+	PORT_SetPinMux(PORTE, 26U, kPORT_MuxAsGpio);
+    /* BLUE */
+    PORT_SetPinMux(PORTB, 21U, kPORT_MuxAsGpio);
+
+
+    /* RED*/
+    GPIO_PinInit(GPIOB, 22U,  &led_config);
+    /* GREEN */
+    GPIO_PinInit(GPIOE, 26U, &led_config);
+    /* BLUE */
+    GPIO_PinInit(GPIOB, 21U,  &led_config);
+
+    GPIO_PortSet(BOARD_LED_RED_GPIO, 1u << BOARD_LED_RED_GPIO_PIN);
+    GPIO_PortSet(BOARD_LED_GREEN_GPIO, 1u <<BOARD_LED_GREEN_GPIO_PIN);
+    GPIO_PortSet(BOARD_LED_BLUE_GPIO, 1u << BOARD_LED_BLUE_GPIO_PIN);
+}
+
+
 /*!
  * @brief Application entry point.
  */
@@ -86,6 +205,9 @@ int main(void)
     BOARD_InitDebugConsole();
     NVIC_SetPriority(MASTER_UART_RX_TX_IRQn, 5);
     NVIC_SetPriority(SLAVE_UART_RX_TX_IRQn, 5);
+
+    BOARD_InitGPIOInterrupts();
+    BOARD_InitLEDsPins();
 
     if (xTaskCreate(test_task, "test_task", test_task_heap_size_d, NULL, init_task_PRIORITY, NULL) != pdPASS)
     {
@@ -208,18 +330,33 @@ static void	message_1_callback_slave(void* message)
 	PRINTF("Slave got message 1 request\r\n");
 
 #if defined(USE_SLAVE1)
-	//Un if que valide si el boton esta presionado se envia un 1 y enciendes rojo, si no se envia 0 y apagas
-	message_data[0] = 1;
+	if (button1_pressed) {
+		message_data[0] = 1;
+		LED_RED_ON();
+	}
+	else {
+		message_data[0] = 0;
+		LED_RED_OFF();
+	}
 	message_data[1] = 0;
 #endif
 
 #if defined(USE_SLAVE2)
-	//if byte 0 es igual a 1 el slave2 enciende en rojo
+	if (message_data[0] == 1) {
+		LED_RED_ON();
+	}
+	else {
+		LED_RED_OFF();
+	}
 #endif
 
-#if defined(USE_SLAVE2)
-
-
+#if defined(USE_SLAVE3)
+	if (message_data[0] == 1) {
+		LED_RED_ON();
+	}
+	else {
+		LED_RED_OFF();
+	}
 #endif
 }
 
@@ -227,22 +364,78 @@ static void	message_2_callback_slave(void* message)
 {
 	uint8_t* message_data = (uint8_t*)message;
 	PRINTF("Slave got message 2 request\r\n");
-	message_data[0] = 79;
-	message_data[1] = 80;
-	message_data[2] = 81;
-	message_data[3] = 82;
+
+#if defined(USE_SLAVE1)
+	if (message_data[0] == 1) {
+		LED_GREEN_ON();
+	}
+	else {
+		LED_GREEN_OFF();
+	}
+#endif
+
+#if defined(USE_SLAVE2)
+	if (button1_pressed) {
+		message_data[0] = 1;
+		LED_GREEN_ON();
+	}
+	else {
+		message_data[0] = 0;
+		LED_GREEN_OFF();
+	}
+	message_data[1] = 0;
+	message_data[2] = 0;
+	message_data[3] = 0;
+#endif
+
+#if defined(USE_SLAVE3)
+	if (message_data[0] == 1) {
+		LED_GREEN_ON();
+	}
+	else {
+		LED_GREEN_OFF();
+	}
+#endif
 }
 
 static void	message_3_callback_slave(void* message)
 {
 	uint8_t* message_data = (uint8_t*)message;
 	PRINTF("Slave got message 3 request\r\n");
-	message_data[0] = 79;
-	message_data[1] = 80;
-	message_data[2] = 81;
-	message_data[3] = 82;
-	message_data[4] = 83;
-	message_data[5] = 84;
-	message_data[6] = 85;
-	message_data[7] = 86;
+
+#if defined(USE_SLAVE1)
+	if (message_data[0] == 1) {
+		LED_BLUE_ON();
+	}
+	else {
+		LED_BLUE_OFF();
+	}
+#endif
+
+#if defined(USE_SLAVE2)
+	if (message_data[0] == 1) {
+		LED_BLUE_ON();
+	}
+	else {
+		LED_BLUE_OFF();
+	}
+#endif
+
+#if defined(USE_SLAVE3)
+	if (button1_pressed) {
+		message_data[0] = 1;
+		LED_BLUE_ON();
+	}
+	else {
+		message_data[0] = 0;
+		LED_BLUE_OFF();
+	}
+	message_data[1] = 0;
+	message_data[2] = 0;
+	message_data[3] = 0;
+	message_data[4] = 0;
+	message_data[5] = 0;
+	message_data[6] = 0;
+	message_data[7] = 0;
+#endif
 }
