@@ -26,9 +26,9 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define USE_MASTER
-#define USE_SLAVE1
-//#define USE_SLAVE2
+//#define USE_MASTER
+//#define USE_SLAVE1
+#define USE_SLAVE2
 //#define USE_SLAVE3
 
 /* Use to indicate the slave if the header received has to transmit or receive */
@@ -265,7 +265,7 @@ static void test_task(void *pvParameters)
 
 #if defined(USE_SLAVE2)
 	node_config.type = lin1d3_slave_nodeType;
-	node_config.bitrate = 9600;
+	node_config.bitrate = 19200;
 	node_config.uartBase = SLAVE_UART;
 	node_config.srcclk = SLAVE_UART_CLK_FREQ;
 	node_config.skip_uart_init = 0;
@@ -285,7 +285,7 @@ static void test_task(void *pvParameters)
 
 #if defined(USE_SLAVE3)
 	node_config.type = lin1d3_slave_nodeType;
-	node_config.bitrate = 9600;
+	node_config.bitrate = 19200;
 	node_config.uartBase = SLAVE_UART;
 	node_config.srcclk = SLAVE_UART_CLK_FREQ;
 	node_config.skip_uart_init = 0;
@@ -313,12 +313,14 @@ static void test_task(void *pvParameters)
 
 	while (kStatus_Success == error)
     {
-    	vTaskDelay(500);
+    	vTaskDelay(10);
+#if defined(USE_MASTER)
     	lin1d3_masterSendMessage(master_handle, app_message_id_1_d);
-    	//vTaskDelay(2000);
-    	//lin1d3_masterSendMessage(master_handle, app_message_id_2_d);
-    	//vTaskDelay(2000);
+    	vTaskDelay(10);
+    	lin1d3_masterSendMessage(master_handle, app_message_id_2_d);
+    	//vTaskDelay(1000);
     	//lin1d3_masterSendMessage(master_handle, app_message_id_3_d);
+#endif
     }
 
     vTaskSuspend(NULL);
