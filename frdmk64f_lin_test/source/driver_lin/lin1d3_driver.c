@@ -221,7 +221,8 @@ static void master_task(void *pvParameters)
         	handle->uart_config.base->C2 &= ~UART_C2_SBK_MASK;
 
         	/* Send the header */
-        	UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)lin1p3_header, size_of_lin_header_d);
+        	UART_WriteBlocking(handle->uart_config.base, (uint8_t *)lin1p3_header, size_of_lin_header_d);
+        	//UART_RTOS_Send(handle->uart_rtos_handle, (uint8_t *)lin1p3_header, size_of_lin_header_d);
         	vTaskDelay(1);
         }
     }
