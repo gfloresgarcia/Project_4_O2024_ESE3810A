@@ -26,9 +26,9 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-//#define USE_MASTER
-//#define USE_SLAVE1
-#define USE_SLAVE2
+#define USE_MASTER
+#define USE_SLAVE1
+//#define USE_SLAVE2
 //#define USE_SLAVE3
 
 /* Use to indicate the slave if the header received has to transmit or receive */
@@ -59,7 +59,7 @@
 
 #define app_message_id_1_d (0x01<<2|message_size_2_bytes_d)
 #define app_message_id_2_d (0x02<<2|message_size_4_bytes_d)
-//#define app_message_id_3_d (0x03<<2|message_size_8_bytes_d)
+#define app_message_id_3_d (0x03<<2|message_size_8_bytes_d)
 
 /*******************************************************************************
  * Prototypes
@@ -68,7 +68,7 @@ static void test_task(void *pvParameters);
 
 static void	message_1_callback_slave(void* message);
 static void	message_2_callback_slave(void* message);
-//static void	message_3_callback_slave(void* message);
+static void	message_3_callback_slave(void* message);
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -256,9 +256,9 @@ static void test_task(void *pvParameters)
 	node_config.messageTable[1].ID = app_message_id_2_d;
 	node_config.messageTable[1].rx = SlaveReceive;
 	node_config.messageTable[1].handler = message_2_callback_slave;
-	//node_config.messageTable[2].ID = app_message_id_3_d;
-	//node_config.messageTable[2].rx = SlaveReceive;
-	//node_config.messageTable[2].handler = message_3_callback_slave;
+	node_config.messageTable[2].ID = app_message_id_3_d;
+	node_config.messageTable[2].rx = SlaveReceive;
+	node_config.messageTable[2].handler = message_3_callback_slave;
 	/* Init Slave Node*/
 	slave_handle = lin1d3_InitNode(node_config);
 #endif
@@ -276,9 +276,9 @@ static void test_task(void *pvParameters)
 	node_config.messageTable[1].ID = app_message_id_2_d;
 	node_config.messageTable[1].rx = SlaveTransmit;
 	node_config.messageTable[1].handler = message_2_callback_slave;
-	//node_config.messageTable[2].ID = app_message_id_3_d;
-	//node_config.messageTable[2].rx = SlaveReceive;
-	//node_config.messageTable[2].handler = message_3_callback_slave;
+	node_config.messageTable[2].ID = app_message_id_3_d;
+	node_config.messageTable[2].rx = SlaveReceive;
+	node_config.messageTable[2].handler = message_3_callback_slave;
 	/* Init Slave Node*/
 	slave_handle = lin1d3_InitNode(node_config);
 #endif
@@ -296,9 +296,9 @@ static void test_task(void *pvParameters)
 	node_config.messageTable[1].ID = app_message_id_2_d;
 	node_config.messageTable[1].rx = SlaveReceive;
 	node_config.messageTable[1].handler = message_2_callback_slave;
-	//node_config.messageTable[2].ID = app_message_id_3_d;
-	//node_config.messageTable[2].rx = SlaveTransmit;
-	//node_config.messageTable[2].handler = message_3_callback_slave;
+	node_config.messageTable[2].ID = app_message_id_3_d;
+	node_config.messageTable[2].rx = SlaveTransmit;
+	node_config.messageTable[2].handler = message_3_callback_slave;
 	/* Init Slave Node*/
 	slave_handle = lin1d3_InitNode(node_config);
 #endif
@@ -318,6 +318,8 @@ static void test_task(void *pvParameters)
     	lin1d3_masterSendMessage(master_handle, app_message_id_1_d);
     	vTaskDelay(5);
     	lin1d3_masterSendMessage(master_handle, app_message_id_2_d);
+    	vTaskDelay(5);
+    	lin1d3_masterSendMessage(master_handle, app_message_id_3_d);
 #endif
     }
 
